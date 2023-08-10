@@ -65,6 +65,7 @@ start_point <- pwi[n,]
 
 #Identify NHD reach 
 start_comid <- discover_nhdplus_id(start_point, raindrop = T)
+start_comid
 
 #Snag flowline
 flowline <- navigate_nldi(list(featureSource = "comid", 
@@ -76,12 +77,13 @@ flowline <- navigate_nldi(list(featureSource = "comid",
 subset_file <- tempfile(fileext = ".gpkg")
 subset <- subset_nhdplus(comids = as.integer(flowline$UT$nhdplus_comid),
                          output_file = subset_file,
-                         nhdplus_data = "download", 
+                         nhdplus_data = 'download', 
                          flowline_only = FALSE,
-                         return_data = TRUE, overwrite = TRUE)
+                         return_data = TRUE, 
+                         overwrite = TRUE)
 #Identify catchment
 shed <- sf::read_sf(subset_file, "CatchmentSP")
-shed <- st_union(catchment)
+shed <- st_union(shed)
 
 #Estimate number of wwtp
 n_wwtp <- wwtp[shed,]
@@ -123,4 +125,8 @@ error_fun <- function(n){
 output <- lapply(
   X = seq(1, nrow(pwi)), 
   FUN = error_fun)
+
+#bind rows
+df <- bind_rows(output)
+df
 

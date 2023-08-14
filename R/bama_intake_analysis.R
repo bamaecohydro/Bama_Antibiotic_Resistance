@@ -54,6 +54,10 @@ wwtp <-
     crs = '+proj=longlat +datum=WGS84 +no_defs') %>% 
   st_transform(., crs = 4269)
 
+#physiographic regions
+usgs_regions <- st_read("C:\\WorkspaceR\\Bama_Antibiotic_Resistance\\data\\USGS_regions\\physio.shp") %>% 
+  st_transform(., crs = 4269)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 3.0 Delineate watershed for each pwi -----------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,5 +132,99 @@ output <- lapply(
 
 #bind rows
 df <- bind_rows(output)
-df
+df <- df %>% filter(n_wwtp>-9999)
 
+#left join 
+df <- pwi %>% rownames_to_column(var = "n") %>% left_join(., df %>% mutate(n = paste(n)))
+
+#write csv to docs
+write_csv(df %>% st_drop_geometry(), "docs//bama_intakes.csv")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 4.0 Plot by physiographic region ---------------------------------------------
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#load patchwork package
+library(patchwork)
+
+#Select relevant points
+df <- df %>% dplyr::select(-Name) %>% drop_na() 
+
+# turn spherical settings off (not sure why this is needed?)
+sf_use_s2(FALSE)
+
+#intersection
+df_usgs <- st_intersection(df, usgs_regions)
+
+#Define physiographic regions
+df_usgs <- df_usgs %>% 
+  mutate(
+    region = if_else(DIVISION == "ATLANTIC PLAIN", "Coastal Plain", ""),
+    region = if_else(DIVISION == "APPALACHIAN HIGHLANDS", "Appalachia", region),
+    region = if_else(SECTION == "PIEDMONT UPLAND", "Piedmont ", region)
+  )
+
+#create plots 
+wwtps <- df_usgs %>% 
+  #Start ggplot object
+  ggplot(aes(x=region, y = n_wwtp, fill=region)) + 
+  geom_boxplot() +
+  #color options
+  scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
+  #crop area
+  coord_cartesian(ylim=c(0,10)) +
+  #Theme options
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14), 
+    axis.text.y  = element_text(size = 10), 
+    axis.text.x  = element_text(size = 14),
+    legend.position = "none"
+  ) + 
+  #Add labels
+  xlab(NULL) + 
+  ylab("Wastewater treatment plants") 
+
+septics <- df_usgs %>% 
+  #Start ggplot object
+  ggplot(aes(x=region, y = n_septics, fill=region)) + 
+  geom_boxplot() +
+  #color options
+  scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
+  #crop area
+  coord_cartesian(ylim=c(0,3000)) +
+  #Theme options
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14), 
+    axis.text.y  = element_text(size = 10), 
+    axis.text.x  = element_text(size = 14),
+    legend.position = "none"
+  ) + 
+  #Add labels
+  xlab(NULL) + 
+  ylab("Septic systems") 
+
+cafo <- df_usgs %>% 
+  #Start ggplot object
+  ggplot(aes(x=region, y = n_cafo, fill=region)) + 
+  geom_boxplot() +
+  #color options
+  scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
+  #crop area
+  coord_cartesian(ylim=c(0,45)) +
+  #Theme options
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14), 
+    axis.text.y  = element_text(size = 10), 
+    axis.text.x  = element_text(size = 14),
+    legend.position = "none"
+  ) + 
+  #Add labels
+  xlab(NULL) + 
+  ylab("CAFO/AFO operations") 
+
+#create plot
+wwtps + septics + cafo + patchwork::plot_layout(ncol=1) + patchwork::plot_annotation(tag_levels ="A", tag_suffix = ")")
+
+ggsave("docs//source.png", dpi=300, width = 5, height = 9, units = "in")

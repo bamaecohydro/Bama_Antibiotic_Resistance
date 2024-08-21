@@ -98,7 +98,7 @@ n_cafo <- cafo[shed,]
 n_cafo <- nrow(n_cafo)
 
 #Estimate number of septics
-shed_proj <- st_transform(shed, crs = st_crs(septics@crs))
+shed_proj <- st_transform(shed, crs = st_crs(septics))
 mask <- fasterize(st_as_sf(shed_proj), septics)
 n_setpics <- crop(septics, mask)
 n_septics <- raster::mask(septics, mask)
@@ -183,6 +183,7 @@ wwtps <- df_usgs %>%
   #Add labels
   xlab(NULL) + 
   ylab("Wastewater treatment plants") 
+wwtps
 
 septics <- df_usgs %>% 
   #Start ggplot object
@@ -191,7 +192,6 @@ septics <- df_usgs %>%
   #color options
   scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
   #crop area
-  coord_cartesian(ylim=c(0,3000)) +
   #Theme options
   theme_bw() +
   theme(
@@ -223,8 +223,10 @@ cafo <- df_usgs %>%
   #Add labels
   xlab(NULL) + 
   ylab("CAFO/AFO operations") 
+cafo
 
 #create plot
 wwtps + septics + cafo + patchwork::plot_layout(ncol=1) + patchwork::plot_annotation(tag_levels ="A", tag_suffix = ")")
 
 ggsave("docs//source.png", dpi=300, width = 5, height = 9, units = "in")
+#ggsave("docs//source.png", dpi=300, width = 5, height = 9, units = "in")

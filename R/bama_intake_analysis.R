@@ -138,7 +138,10 @@ df <- df %>% filter(n_wwtp>-9999)
 df <- pwi %>% rownames_to_column(var = "n") %>% left_join(., df %>% mutate(n = paste(n)))
 
 #write csv to docs
-write_csv(df %>% st_drop_geometry(), "docs//bama_intakes.csv")
+#write_csv(df %>% st_drop_geometry(), "docs//bama_intakes.csv")
+
+#save image
+save.image(file='bama_intake.RData')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 4.0 Plot by physiographic region ---------------------------------------------
@@ -161,17 +164,20 @@ df_usgs <- df_usgs %>%
     region = if_else(DIVISION == "ATLANTIC PLAIN", "Coastal Plain", ""),
     region = if_else(DIVISION == "APPALACHIAN HIGHLANDS", "Appalachia", region),
     region = if_else(SECTION == "PIEDMONT UPLAND", "Piedmont ", region)
-  )
+  ) %>% 
+  filter(region != "") 
 
 #create plots 
 wwtps <- df_usgs %>% 
+  #filter for sanity
+  filter(n_wwtp <= 30) %>% 
   #Start ggplot object
   ggplot(aes(x=region, y = n_wwtp, fill=region)) + 
   geom_boxplot() +
   #color options
   scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
   #crop area
-  coord_cartesian(ylim=c(0,10)) +
+  coord_cartesian(ylim=c(0,5)) +
   #Theme options
   theme_bw() +
   theme(
@@ -182,15 +188,19 @@ wwtps <- df_usgs %>%
   ) + 
   #Add labels
   xlab(NULL) + 
-  ylab("Wastewater treatment plants") 
+  ylab("Number of WWTPs\nupstream of DWTPs") 
 wwtps
 
 septics <- df_usgs %>% 
+  #filter for sanity
+  filter(n_septics<5000) %>% 
   #Start ggplot object
   ggplot(aes(x=region, y = n_septics, fill=region)) + 
   geom_boxplot() +
   #color options
   scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
+  #crop area
+  coord_cartesian(ylim=c(0,3000)) +
   #crop area
   #Theme options
   theme_bw() +
@@ -202,7 +212,8 @@ septics <- df_usgs %>%
   ) + 
   #Add labels
   xlab(NULL) + 
-  ylab("Septic systems") 
+  ylab("Number of septic systems\nupstream of DWTPs") 
+septics
 
 cafo <- df_usgs %>% 
   #Start ggplot object
@@ -211,7 +222,7 @@ cafo <- df_usgs %>%
   #color options
   scale_fill_manual(values = c("#e41a1c","#377eb8","#4daf4a")) +
   #crop area
-  coord_cartesian(ylim=c(0,45)) +
+  coord_cartesian(ylim=c(0,40)) +
   #Theme options
   theme_bw() +
   theme(
@@ -222,7 +233,7 @@ cafo <- df_usgs %>%
   ) + 
   #Add labels
   xlab(NULL) + 
-  ylab("CAFO/AFO operations") 
+  ylab("Number of CAFO/AFOs\nupstream of DWTPs") 
 cafo
 
 #create plot

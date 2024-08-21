@@ -31,6 +31,9 @@ wwtp <-
 #Load US data
 states <- states() %>% dplyr::filter((STUSPS %in% c('AL')))
 
+#get nhdplus files (https://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Hydrography/WBD/HU2/Shape/)
+sheds <- st_read("data//USGS_WBD//shape//WBDHU12.shp") %>% st_transform(., 5070)
+
 #Rerpoject and clip to continental US
 states <- st_transform(states, 5070)
 pwi_point <- st_transform(pwi_point, 5070) 
@@ -61,9 +64,6 @@ flowline <- flowline %>% st_transform(., 5070)
 
 #plot for funzies
 mapview(start_point) + mapview(flowline)
-
-#get nhdplus files
-sheds <- st_read("data//USGS_WBD//shape//WBDHU12.shp") %>% st_transform(., 5070)
 
 #Snag catchment
 coosa_catchment <- sheds[flowline,]
